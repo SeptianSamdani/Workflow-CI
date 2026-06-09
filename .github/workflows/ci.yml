@@ -1,0 +1,42 @@
+name: CI - Engine Fault Model Training
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run actions/checkout@v3
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.12.7
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.7'
+
+      - name: Check Env
+        run: python --version
+
+      - name: Install dependencies
+        run: |
+          pip install mlflow==2.19.0 scikit-learn==1.6.0 pandas==2.2.2 numpy==1.26.4 matplotlib==3.9.0 seaborn==0.13.2
+
+      - name: Run mlflow project
+        run: |
+          cd MLProject
+          mlflow run . --env-manager=local
+
+      - name: Get latest MLflow run_id
+        run: |
+          python -c "
+          import mlflow
+          client = mlflow.tracking.MlflowClient()
+          exp = client.get_experiment_by_name('Engine Fault Detection CI')
+          runs = client.search_runs(exp.experiment_id, order_by=['start_time DESC'], max_results=1)
+          print('Latest run_id:', runs[0].info.run_id)
+          "
