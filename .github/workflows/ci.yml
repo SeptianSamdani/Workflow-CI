@@ -30,13 +30,3 @@ jobs:
         run: |
           cd MLProject
           mlflow run . --env-manager=local
-
-      - name: Get latest MLflow run_id
-        run: |
-          python -c "
-          import mlflow
-          client = mlflow.tracking.MlflowClient()
-          exp = client.get_experiment_by_name('Engine Fault Detection CI')
-          runs = client.search_runs(exp.experiment_id, order_by=['start_time DESC'], max_results=1)
-          print('Latest run_id:', runs[0].info.run_id)
-          "
