@@ -65,8 +65,9 @@ recall    = recall_score(y_test, y_pred, average='weighted', zero_division=0)
 logloss   = log_loss(y_test, y_prob)
 
 # Gunakan active run dari MLflow Project
-run = mlflow.active_run()
-with mlflow.start_run(run_id=run.info.run_id):
+run_id = os.environ.get("MLFLOW_RUN_ID")
+
+with mlflow.start_run(run_id=run_id):
     mlflow.log_param("n_estimators", 100)
     mlflow.log_param("random_state", 42)
     mlflow.log_param("class_weight", "balanced")
