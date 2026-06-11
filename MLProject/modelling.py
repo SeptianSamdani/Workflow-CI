@@ -20,8 +20,6 @@ y_train = train['Engine_Condition']
 X_test = test.drop('Engine_Condition', axis=1)
 y_test = test['Engine_Condition']
 
-mlflow.set_experiment("Engine Fault Detection CI")
-
 os.makedirs('artifacts', exist_ok=True)
 
 def save_confusion_matrix(y_true, y_pred, path):
@@ -50,7 +48,6 @@ def save_feature_importance(model, feature_names, path):
     plt.savefig(path)
     plt.close()
 
-# Tidak pakai mlflow.start_run() — MLflow Project sudah buat run otomatis
 model = RandomForestClassifier(
     n_estimators=100,
     random_state=42,
@@ -67,30 +64,33 @@ precision = precision_score(y_test, y_pred, average='weighted', zero_division=0)
 recall    = recall_score(y_test, y_pred, average='weighted', zero_division=0)
 logloss   = log_loss(y_test, y_prob)
 
-mlflow.log_param("n_estimators", 100)
-mlflow.log_param("random_state", 42)
-mlflow.log_param("class_weight", "balanced")
-mlflow.log_metric("accuracy", acc)
-mlflow.log_metric("f1_score_weighted", f1)
-mlflow.log_metric("precision_weighted", precision)
-mlflow.log_metric("recall_weighted", recall)
-mlflow.log_metric("log_loss", logloss)
+# Gunakan active run dari MLflow Project
+run = mlflow.active_run()
+with mlflow.start_run(run_id=run.info.run_id):
+    mlflow.log_param("n_estimators", 100)
+    mlflow.log_param("random_state", 42)
+    mlflow.log_param("class_weight", "balanced")
+    mlflow.log_metric("accuracy", acc)
+    mlflow.log_metric("f1_score_weighted", f1)
+    mlflow.log_metric("precision_weighted", precision)
+    mlflow.log_metric("recall_weighted", recall)
+    mlflow.log_metric("log_loss", logloss)
 
-cm_path = 'artifacts/confusion_matrix.png'
-fi_path = 'artifacts/feature_importance.png'
-cr_path = 'artifacts/classification_report.txt'
+    cm_path = 'artifacts/confusion_matrix.png'
+    fi_path = 'artifacts/feature_importance.png'
+    cr_path = 'artifacts/classification_report.txt'
 
-save_confusion_matrix(y_test, y_pred, cm_path)
-save_feature_importance(model, X_train.columns.tolist(), fi_path)
-with open(cr_path, 'w') as f:
-    f.write(classification_report(y_test, y_pred,
-            target_names=['Normal', 'Minor Fault', 'Critical Fault'],
-            zero_division=0))
+    save_confusion_matrix(y_test, y_pred, cm_path)
+    save_feature_importance(model, X_train.columns.tolist(), fi_path)
+    with open(cr_path, 'w') as f:
+        f.write(classification_report(y_test, y_pred,
+                target_names=['Normal', 'Minor Fault', 'Critical Fault'],
+                zero_division=0))
 
-mlflow.log_artifact(cm_path)
-mlflow.log_artifact(fi_path)
-mlflow.log_artifact(cr_path)
-mlflow.sklearn.log_model(model, artifact_path="model")
+    mlflow.log_artifact(cm_path)
+    mlflow.log_artifact(fi_path)
+    mlflow.log_artifact(cr_path)
+    mlflow.sklearn.log_model(model, artifact_path="model")
 
 print(f"Accuracy  : {acc:.4f}")
 print(f"F1 Score  : {f1:.4f}")
